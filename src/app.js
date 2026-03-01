@@ -7,6 +7,7 @@ const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
 const jwToken = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
+const { UserAuth } = require("./middleware/auth.js");
 
 const { connectDB } = require("./config/databaseConn.js");
 const express = require("express");
@@ -48,6 +49,66 @@ server.use(express.json());
 server.use(cookieParser());
 server.use(require("helmet")()); // learn more about it later
 server.use(globalLimiter);
+
+
+server.post("/signUp", async (req, res, next) => {
+    const allowedSignUpKeys = ["firstName", "lastName", "emailId", "userName", "password", "mobileNo"];
+    try {
+        const filteredObj = FilterObj(allowedSignUpKeys, req.body);
+        ValidateSignUp(filteredObj);
+        // password hashing
+        const hashedPassword = bcrypt.hashSync(filteredObj.password, Number(process.env.SALT_ROUNDS) || 10);
+        filteredObj.password = hashedPassword;
+        const data = await UserModel.create(filteredObj);
+        const userData = await UserModel.findById(data._id);
+        res.status(200).send(userData);
+    } catch (err) {
+        next(err);
+    }
+});
+
+server.post("/login", async (req, res, next) => {
+    const allowedSignUpKeys = ["emailId", "userName", "password", "mobileNo"];
+    try {
+        const filteredObj = FilterObj(allowedSignUpKeys, req.body);
+        ValidateLogin(filteredObj);
+
+        let userInfoObj = {};
+        if (filteredObj.emailId) {
+            userInfoObj = await UserModel.findOne({ emailId: filteredObj.emailId }).select("+password");
+        } else if (filteredObj.userName) {
+            userInfoObj = await UserModel.findOne({ userName: filteredObj.userName }).select("+password");
+        } else {
+            userInfoObj = await UserModel.findOne({ mobileNo: filteredObj.mobileNo }).select("+password");
+        }
+
+        if (!userInfoObj) {
+            res.status(404).send({ error: "Please enter valid credentials" });
+        }
+        // password comparing
+        const isUserAuthenticated = bcrypt.compareSync(filteredObj.password, userInfoObj.password);
+        if (isUserAuthenticated) {
+            // generating token
+            const jwt = jwToken.sign({ _id: userInfoObj._id }, process.env.JWT_SECREAT_KEY, {
+                expiresIn: process.env.JWT_Token_EXPIRY 
+            });
+            res.cookie("jwToken", jwt, {
+                httpOnly: true,     // Cannot access via JS or anything
+                // secure: true,       // Only HTTPS
+                sameSite: "strict", // Prevent CSRF
+                maxAge: 24 * 60 * 60 * 1000 // 1 day cookie expire
+            });
+            res.status(200).send({ isSuccess: true });
+        }
+        else {
+            throw new AppError("Please enter valid credentials", 400);
+        }
+    } catch (err) {
+        next(err);
+    }
+});
+
+server.use(UserAuth);
 
 
 server.post("/getUserByEmail", async (req, res, next) => {
@@ -101,62 +162,6 @@ server.patch("/updateUser/:id", async (req, res, next) => {
     }
 });
 
-server.post("/signUp", async (req, res, next) => {
-    const allowedSignUpKeys = ["firstName", "lastName", "emailId", "userName", "password", "mobileNo"];
-    try {
-        const filteredObj = FilterObj(allowedSignUpKeys, req.body);
-        ValidateSignUp(filteredObj);
-        // password hashing
-        const hashedPassword = bcrypt.hashSync(filteredObj.password, Number(process.env.SALT_ROUNDS) || 10);
-        filteredObj.password = hashedPassword;
-        const data = await UserModel.create(filteredObj);
-        const userData = await UserModel.findById(data._id);
-        res.status(200).send(userData);
-    } catch (err) {
-        next(err);
-    }
-});
-
-server.post("/login", async (req, res, next) => {
-    const allowedSignUpKeys = ["emailId", "userName", "password", "mobileNo"];
-    try {
-        const filteredObj = FilterObj(allowedSignUpKeys, req.body);
-        ValidateLogin(filteredObj);
-
-        let userInfoObj = {};
-        if (filteredObj.emailId) {
-            userInfoObj = await UserModel.findOne({ emailId: filteredObj.emailId }).select("+password");
-        } else if (filteredObj.userName) {
-            userInfoObj = await UserModel.findOne({ userName: filteredObj.userName }).select("+password");
-        } else {
-            userInfoObj = await UserModel.findOne({ mobileNo: filteredObj.mobileNo }).select("+password");
-        }
-
-        if (!userInfoObj) {
-            res.status(404).send({ error: "Please enter valid credentials" });
-        }
-        // password comparing
-        const isUserAuthenticated = bcrypt.compareSync(filteredObj.password, userInfoObj.password);
-        if (isUserAuthenticated) {
-            // generating token
-            const jwt = jwToken.sign({ _id: userInfoObj._id }, process.env.JWT_SECREAT_KEY, {
-                expiresIn: "1d" // expire jwt after 1 day
-            });
-            res.cookie("jwToken", jwt, {
-                httpOnly: true,     // Cannot access via JS or anything
-                // secure: true,       // Only HTTPS
-                sameSite: "strict", // Prevent CSRF
-                maxAge: 24 * 60 * 60 * 1000 // 1 day cookie expire
-            });
-            res.status(200).send({ isSuccess: true });
-        }
-        else {
-            throw new AppError("Please enter valid credentials", 400);
-        }
-    } catch (err) {
-        next(err);
-    }
-});
 
 // error handling middleware
 
