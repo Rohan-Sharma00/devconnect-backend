@@ -12,6 +12,7 @@ const server = express();
 const { UserModel } = require("./models/users.js");
 const { FilterObj } = require("./utils/UtilFunctions.js");
 const { authRoutes } = require("./routes/auth.routes.js");
+const { profileRoutes } = require("./routes/profile.routes.js");
 
 const startServer = async () => {
     console.log("Loaded ENV:", process.env.ENV_NAME);
@@ -28,17 +29,17 @@ startServer();
 
 const globalLimiter = rateLimit({
 
-   windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000, // 15 minutes
 
-   max: 50, // 100 requests per IP
+    max: 50, // 100 requests per IP
 
-   message: {
-      message: "Too many requests. Try again later."
-   },
+    message: {
+        message: "Too many requests. Try again later."
+    },
 
-   standardHeaders: true, // modern headers
+    standardHeaders: true, // modern headers
 
-   legacyHeaders: false   // disable old headers
+    legacyHeaders: false   // disable old headers
 
 }); // learn more about it later
 
@@ -48,11 +49,14 @@ server.use(require("helmet")()); // learn more about it later
 server.use(globalLimiter);
 
 
-// integrate auth routes
-server.use("/auth", authRoutes);
+// all auth routes
+server.use("/", authRoutes);
 
 // user auth middleware global support
 server.use(UserAuth);
+
+// all profile routes
+server.use("/profile", profileRoutes);
 
 
 server.post("/getUserByEmail", async (req, res, next) => {
@@ -92,20 +96,6 @@ server.delete("/deleteUser", async (req, res, next) => {
         res.status(400).send("No user with id ", req.body.userId);
     }
 });
-
-server.patch("/updateUser/:id", async (req, res, next) => {
-    const userId = req.params["id"];
-    const allowedUpdate = ["age", "gender", "password", "photoUrl", "skills", "mobileNo"];
-    try {
-        const filteredObj = FilterObj(allowedUpdate, req.body);
-        const data = await UserModel.findByIdAndUpdate(userId, filteredObj, { runValidators: true, new: true });
-        res.status(200).send(data);
-    }
-    catch (err) {
-        throw new Error(err);
-    }
-});
-
 
 // error handling middleware
 

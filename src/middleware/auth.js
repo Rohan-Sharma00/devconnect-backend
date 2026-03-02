@@ -6,14 +6,12 @@ const { AppError } = require("../utils/AppError");
 const UserAuth = async (req, res, next) => {
     try {
         const { jwToken } = req.cookies;
-          console.log(req.cookies);
         if (!jwToken) {
             throw new AppError("Authentication Token is not valid", 400);
         }
         const decodedObj = jwtTokenLibrary.verify(jwToken, process.env.JWT_SECREAT_KEY);
-        console.log(decodedObj);
         const { _id } = decodedObj;
-        const userObj = UserModel.findById(_id);
+        const userObj = await UserModel.findById(_id);
         if (!userObj) {
             throw new AppError("User does not exist in database", 400);
         } else {

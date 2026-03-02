@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 const { FilterObj } = require("../utils/UtilFunctions.js");
 const { ValidateSignUp, ValidateLogin } = require("../utils/ValidatorFunctions.js");
 
-const signUpUser =  async (req, res, next) => {
+const signUpUser = async (req, res, next) => {
     const allowedSignUpKeys = ["firstName", "lastName", "emailId", "userName", "password", "mobileNo"];
     try {
         const filteredObj = FilterObj(allowedSignUpKeys, req.body);
@@ -20,7 +20,7 @@ const signUpUser =  async (req, res, next) => {
     }
 }
 
-const loginUser =  async (req, res, next) => {
+const loginUser = async (req, res, next) => {
     const allowedSignUpKeys = ["emailId", "userName", "password", "mobileNo"];
     try {
         const filteredObj = FilterObj(allowedSignUpKeys, req.body);
@@ -36,7 +36,7 @@ const loginUser =  async (req, res, next) => {
         }
 
         if (!userInfoObj) {
-           return res.status(404).send({ error: "Please enter valid credentials" });
+            return res.status(404).send({ error: "Please enter valid credentials" });
         }
         // password comparing (shifted to schema methods)
         const isUserAuthenticated = userInfoObj.comparePasswords(filteredObj.password);
@@ -44,7 +44,7 @@ const loginUser =  async (req, res, next) => {
         if (isUserAuthenticated) {
             // generating token shifted to schema method
 
-            const jwt =  userInfoObj.generateJwt();
+            const jwt = userInfoObj.generateJwt();
 
             res.cookie("jwToken", jwt, {
                 httpOnly: true,     // Cannot access via JS or anything
@@ -62,6 +62,16 @@ const loginUser =  async (req, res, next) => {
     }
 }
 
+const forgotPasswordUser = () => { }
 
+const logoutUser = (req, res) => {
+    res.cookie("jwToken", null, {
+        httpOnly: true,     // Cannot access via JS or anything
+        // secure: true,       // Only HTTPS
+        sameSite: "strict", // Prevent CSRF
+        expires: new Date(Date.now())// expire instantly
+    });
+    res.send({isSuccessful:true,message:"user logout successfully !"});
+}
 
-module.exports = { signUpUser , loginUser};
+module.exports = { signUpUser, loginUser, forgotPasswordUser, logoutUser };

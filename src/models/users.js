@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         trim: true,
         required: true,
+        unique: true,
     },
     photoUrl: {
         type: String,
@@ -66,6 +67,99 @@ const userSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         required: true
+    },
+    about: {
+        type: String,
+        trim: true,
+        maxlength: [500, "About cannot exceed 500 characters"]
+    },
+
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+
+    role: {
+        type: String,
+        enum: {
+            values: ["user", "admin"],
+            message: "Role must be user or admin"
+        },
+        default: "user"
+    },
+
+    accountStatus: {
+        type: String,
+        enum: {
+            values: ["active", "blocked"],
+            message: "Account status must be active or blocked"
+        },
+        default: "active"
+    },
+
+    lastLogin: {
+        type: Date
+    },
+
+    location: {
+        type: String,
+        trim: true,
+        maxlength: [100, "Location too long"]
+    },
+
+    socialLinks: {
+
+        linkedin: {
+            type: String,
+            trim: true,
+            validate: {
+                validator: function (value) {
+                    return !value || validator.isURL(value);
+                },
+                message: "Invalid LinkedIn URL"
+            }
+        },
+
+        github: {
+            type: String,
+            trim: true,
+            validate: {
+                validator: function (value) {
+                    return !value || validator.isURL(value);
+                },
+                message: "Invalid Github URL"
+            }
+        },
+
+        portfolio: {
+            type: String,
+            trim: true,
+            validate: {
+                validator: function (value) {
+                    return !value || validator.isURL(value);
+                },
+                message: "Invalid Portfolio URL"
+            }
+        },
+
+        instagram: {
+            type: String,
+            trim: true,
+            validate: {
+                validator: function (value) {
+                    return !value || validator.isURL(value);
+                },
+                message: "Invalid Instagram URL"
+            }
+        }
+
+    },
+
+    profileCompletion: {
+        type: Number,
+        default: 0,
+        min: [0, "Profile completion cannot be less than 0"],
+        max: [100, "Profile completion cannot exceed 100"]
     }
 }, { timestamps: true });
 
