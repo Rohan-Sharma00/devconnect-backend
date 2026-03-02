@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
         minlen: [3, "The first name should be at least 3"],
+        maxlength: [30, "first name is  too long"],
         required: [true, "first name is required"],
         trim: true
     },
@@ -61,12 +62,20 @@ const userSchema = new mongoose.Schema({
     },
     skills: {
         type: [String],
+        validate: {
+            validator: function (arr) {
+                return arr.length <= 20;
+            },
+            message: "Maximum 20 skills allowed"
+        }
     },
     userName: {
         type: String,
         unique: true,
         trim: true,
-        required: true
+        required: true,
+        minlength: [3, "Username too short"],
+        maxlength: [30, "Username too long"],
     },
     about: {
         type: String,
@@ -106,53 +115,60 @@ const userSchema = new mongoose.Schema({
         trim: true,
         maxlength: [100, "Location too long"]
     },
-
-    socialLinks: {
-
-        linkedin: {
-            type: String,
-            trim: true,
-            validate: {
-                validator: function (value) {
-                    return !value || validator.isURL(value);
-                },
-                message: "Invalid LinkedIn URL"
-            }
-        },
-
-        github: {
-            type: String,
-            trim: true,
-            validate: {
-                validator: function (value) {
-                    return !value || validator.isURL(value);
-                },
-                message: "Invalid Github URL"
-            }
-        },
-
-        portfolio: {
-            type: String,
-            trim: true,
-            validate: {
-                validator: function (value) {
-                    return !value || validator.isURL(value);
-                },
-                message: "Invalid Portfolio URL"
-            }
-        },
-
-        instagram: {
-            type: String,
-            trim: true,
-            validate: {
-                validator: function (value) {
-                    return !value || validator.isURL(value);
-                },
-                message: "Invalid Instagram URL"
-            }
+    linkedin: {
+        type: String,
+        trim: true,
+        validate: {
+            validator: function (value) {
+                return !value || validator.isURL(value, {
+                    protocols: ["http", "https"],
+                    require_protocol: true
+                });
+            },
+            message: "Invalid LinkedIn URL"
         }
+    },
 
+    github: {
+        type: String,
+        trim: true,
+        validate: {
+            validator: function (value) {
+                return !value || validator.isURL(value, {
+                    protocols: ["http", "https"],
+                    require_protocol: true
+                });
+            },
+            message: "Invalid Github URL"
+        }
+    },
+
+    portfolio: {
+        type: String,
+        trim: true,
+        validate: {
+            validator: function (value) {
+                return !value || validator.isURL(value, {
+                    protocols: ["http", "https"],
+                    require_protocol: true
+                });
+            },
+            message: "Invalid Portfolio URL"
+        }
+    },
+
+    instagram: {
+        type: String,
+        trim: true,
+        validate: {
+            validator: function (value) {
+                return !value || validator.isURL(value, {
+                    protocols: ["http", "https"],
+                    require_protocol: true
+                });
+            },
+            message: "Invalid Instagram URL"
+        }
     },
 
     profileCompletion: {

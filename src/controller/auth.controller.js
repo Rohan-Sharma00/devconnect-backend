@@ -1,8 +1,10 @@
 const { UserModel } = require("../models/users");
 const { AppError } = require("../utils/AppError.js");
 const bcrypt = require("bcrypt");
-const { FilterObj } = require("../utils/UtilFunctions.js");
+const { FilterObj, convertResponseObj } = require("../utils/UtilFunctions.js");
 const { ValidateSignUp, ValidateLogin } = require("../utils/ValidatorFunctions.js");
+const validator = require("validator");
+
 
 const signUpUser = async (req, res, next) => {
     const allowedSignUpKeys = ["firstName", "lastName", "emailId", "userName", "password", "mobileNo"];
@@ -14,7 +16,7 @@ const signUpUser = async (req, res, next) => {
         filteredObj.password = hashedPassword;
         const data = await UserModel.create(filteredObj);
         const userData = await UserModel.findById(data._id);
-        res.status(200).send(userData);
+        res.status(200).send(convertResponseObj(userData, true, "user signUp successfully"));
     } catch (err) {
         next(err);
     }
@@ -36,7 +38,7 @@ const loginUser = async (req, res, next) => {
         }
 
         if (!userInfoObj) {
-            return res.status(404).send({ error: "Please enter valid credentials" });
+            return res.status(404).send(convertResponseObj({}, false, "Please enter valid credentials"));
         }
         // password comparing (shifted to schema methods)
         const isUserAuthenticated = userInfoObj.comparePasswords(filteredObj.password);
@@ -52,7 +54,7 @@ const loginUser = async (req, res, next) => {
                 sameSite: "strict", // Prevent CSRF
                 maxAge: 24 * 60 * 60 * 1000 // 1 day cookie expire
             });
-            res.status(200).send({ isSuccess: true });
+            res.status(200).send(convertResponseObj({}, true, "user logged in successfully"));
         }
         else {
             throw new AppError("Please enter valid credentials", 400);
@@ -64,6 +66,31 @@ const loginUser = async (req, res, next) => {
 
 const forgotPasswordUser = () => { }
 
+const resetPasswordUser = async (req, res) => {
+    const user = await UserModel.findById(req.user._id).select("+password");
+
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+        res.status(400).send(convertResponseObj({}, false, "old password and new password both is require"));
+        return;
+    }
+
+    const isValid = user.comparePasswords(oldPassword);
+
+    if (!isValid) {
+       res.status(400).send(convertResponseObj({}, false, "old password and new password do not match"));
+       return;
+    }
+    if (newPassword && !validator.isStrongPassword(newPassword)) {
+        res.status(400).send(convertResponseObj({}, false, "new Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."));
+        return;
+    }
+    const hashedPassword = bcrypt.hashSync(newPassword, Number(process.env.SALT_ROUNDS) || 10);
+    const data = await UserModel.findByIdAndUpdate(req.user._id, { password: hashedPassword });
+    res.status(200).send(convertResponseObj(data, true, "user password updated successfully"));
+}
+
 const logoutUser = (req, res) => {
     res.cookie("jwToken", null, {
         httpOnly: true,     // Cannot access via JS or anything
@@ -71,7 +98,7 @@ const logoutUser = (req, res) => {
         sameSite: "strict", // Prevent CSRF
         expires: new Date(Date.now())// expire instantly
     });
-    res.send({isSuccessful:true,message:"user logout successfully !"});
+    res.send(convertResponseObj({}, true, "user logged out successfully"));
 }
 
-module.exports = { signUpUser, loginUser, forgotPasswordUser, logoutUser };
+module.exports = { signUpUser, loginUser, forgotPasswordUser, logoutUser, resetPasswordUser };

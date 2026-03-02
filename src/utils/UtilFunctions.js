@@ -10,4 +10,12 @@ const FilterObj=(allowedKeys,reqObj)=>{
     return filteredObj;
 };
 
-module.exports = {FilterObj};
+const convertResponseObj = (dataObj={}, isSuccessfulReq, message = "") => {
+     return {
+        success: isSuccessfulReq,
+        message: message,
+        data: dataObj
+    };
+};
+
+module.exports = {FilterObj, convertResponseObj};

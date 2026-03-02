@@ -1,12 +1,20 @@
 const { UserModel } = require("../models/users");
 const { AppError } = require("../utils/AppError.js");
-const { FilterObj } = require("../utils/UtilFunctions.js");
+const { FilterObj, convertResponseObj } = require("../utils/UtilFunctions.js");
 
-const viewProfile = () => { }
+const viewProfile = async (req, res) => {
+    try {
+        const userObj = req?.user;
+        res.status(200).send(convertResponseObj(userObj, true, "profile viwed successfully"));
+    }
+    catch (err) {
+        throw new AppError(err, 400);
+    }
+}
 
-const EditProfile = async (req,res) => {
+const EditProfile = async (req, res) => {
     const userId = req?.user?._id;
-   
+
     const allowedUpdateFields = [
         "firstName",
         "lastName",
@@ -17,15 +25,22 @@ const EditProfile = async (req,res) => {
         "mobileNo",
         "about",
         "location",
-        "socialLinks"
+        "linkedin",
+        "github",
+        "portfolio",
+        "instagram"
     ];
     try {
         const filteredObj = FilterObj(allowedUpdateFields, req.body);
-        const data = await UserModel.findByIdAndUpdate(userId, filteredObj, { runValidators: true, returnDocument: "after" });
-        res.status(200).send(data);
+        const data = await UserModel.findByIdAndUpdate(userId, filteredObj, {
+            returnDocument: "after",   
+            runValidators: true,      
+            context: "query"          
+        });
+        res.status(200).send(convertResponseObj(data, true, "profile updated successfully"));
     }
     catch (err) {
-        throw new AppError(err,400);
+        throw new AppError(err, 400);
     }
 }
 

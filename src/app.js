@@ -10,7 +10,7 @@ const { connectDB } = require("./config/databaseConn.js");
 const express = require("express");
 const server = express();
 const { UserModel } = require("./models/users.js");
-const { FilterObj } = require("./utils/UtilFunctions.js");
+const { convertResponseObj } = require("./utils/UtilFunctions.js");
 const { authRoutes } = require("./routes/auth.routes.js");
 const { profileRoutes } = require("./routes/profile.routes.js");
 
@@ -100,9 +100,13 @@ server.delete("/deleteUser", async (req, res, next) => {
 // error handling middleware
 
 server.use((err, req, res, next) => {
-    res.status(err.statusCode || 500).json({
-        message: err.message || "Something went wrong"
-    });
+    res.status(err.statusCode || 500).json(
+        convertResponseObj(
+            null,
+            false,
+            err.message || "Something went wrong"
+        )
+    );
 });
 
 
