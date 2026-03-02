@@ -13,6 +13,7 @@ const { UserModel } = require("./models/users.js");
 const { convertResponseObj } = require("./utils/UtilFunctions.js");
 const { authRoutes } = require("./routes/auth.routes.js");
 const { profileRoutes } = require("./routes/profile.routes.js");
+const { connectionRequestRoutes } = require("./routes/connectionRequests.routes.js");
 
 const startServer = async () => {
     console.log("Loaded ENV:", process.env.ENV_NAME);
@@ -58,25 +59,11 @@ server.use(UserAuth);
 // all profile routes
 server.use("/profile", profileRoutes);
 
+// all connection requests routes
+server.use("/request", connectionRequestRoutes);
 
-server.post("/getUserByEmail", async (req, res, next) => {
-    const userEmailId = req.body.emailId;
-    const data = await UserModel.find({ emailId: userEmailId });
-    if (data.length != 0) {
-        res.status(200).send(data);
-    } else {
-        res.status(404).send("No user present with this email");
-    }
-});
 
-server.post("/addUser", async (req, res, next) => {
-    const data = await UserModel.create(req.body);
-    if (data) {
-        res.status(200).send(data);
-    } else {
-        res.status(500).send("Error while storing data");
-    }
-});
+
 
 server.get("/getAllUser", async (req, res, next) => {
     try {
@@ -88,14 +75,6 @@ server.get("/getAllUser", async (req, res, next) => {
     }
 });
 
-server.delete("/deleteUser", async (req, res, next) => {
-    try {
-        const deletedData = await UserModel.deleteOne({ _id: req.body.userId });
-        res.status(200).send(deletedData);
-    } catch (error) {
-        res.status(400).send("No user with id ", req.body.userId);
-    }
-});
 
 // error handling middleware
 
