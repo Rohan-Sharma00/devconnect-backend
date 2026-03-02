@@ -33,7 +33,7 @@ const globalLimiter = rateLimit({
 
    windowMs: 15 * 60 * 1000, // 15 minutes
 
-   max: 100, // 100 requests per IP
+   max: 50, // 100 requests per IP
 
    message: {
       message: "Too many requests. Try again later."
@@ -83,15 +83,16 @@ server.post("/login", async (req, res, next) => {
         }
 
         if (!userInfoObj) {
-            res.status(404).send({ error: "Please enter valid credentials" });
+           return res.status(404).send({ error: "Please enter valid credentials" });
         }
-        // password comparing
-        const isUserAuthenticated = bcrypt.compareSync(filteredObj.password, userInfoObj.password);
+        // password comparing (shifted to schema methods)
+        const isUserAuthenticated = userInfoObj.comparePasswords(filteredObj.password);
+
         if (isUserAuthenticated) {
-            // generating token
-            const jwt = jwToken.sign({ _id: userInfoObj._id }, process.env.JWT_SECREAT_KEY, {
-                expiresIn: process.env.JWT_Token_EXPIRY 
-            });
+            // generating token shifted to schema method
+
+            const jwt =  userInfoObj.generateJwt();
+
             res.cookie("jwToken", jwt, {
                 httpOnly: true,     // Cannot access via JS or anything
                 // secure: true,       // Only HTTPS

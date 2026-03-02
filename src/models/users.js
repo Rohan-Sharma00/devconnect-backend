@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
-const validator=require("validator");
+const validator = require("validator");
+const jwToken = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+
 
 const userSchema = new mongoose.Schema({
     firstName: {
@@ -22,7 +25,7 @@ const userSchema = new mongoose.Schema({
         required: [true, "email id is required"],
         unique: true,
         trim: true,
-         validate: {
+        validate: {
             validator: function (value) {
                 return validator.isEmail(value);
             },
@@ -55,16 +58,30 @@ const userSchema = new mongoose.Schema({
         default: "https://ohmylens.com/wp-content/uploads/2017/06/dummy-profile-pic.png",
         trim: true
     },
-    skills:{
-        type:[String],
+    skills: {
+        type: [String],
     },
-    userName:{
-        type:String,
-        unique:true,
-        trim:true,
-        required:true
+    userName: {
+        type: String,
+        unique: true,
+        trim: true,
+        required: true
     }
 }, { timestamps: true });
+
+userSchema.methods.generateJwt = function () {
+    const user = this;
+    const jwt = jwToken.sign({ _id: user._id }, process.env.JWT_SECREAT_KEY, {
+        expiresIn: process.env.JWT_Token_EXPIRY
+    });
+    return jwt;
+}
+
+userSchema.methods.comparePasswords = function (passwordInputeByUser) {
+    const user = this;
+    const hashedPassword = user.password;
+    return bcrypt.compareSync(passwordInputeByUser, hashedPassword);
+}
 
 const UserModel = mongoose.model("User", userSchema);
 
