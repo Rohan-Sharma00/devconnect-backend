@@ -5,13 +5,13 @@ const { UserModel } = require("../models/users");
 const mongoose = require("mongoose");
 
 
-const sendRequest = async (req, res) => {
+const sendRequest = async (req, res,next) => {
     try {
         const fromUserId = req.user._id;
         const toUserId = req.params["userId"];
         const status = req.params["status"];
         // validate status
-        const allowedStatus = ["interested", "ignored"];
+        const allowedStatus = ["interest", "ignor"];
         if (!allowedStatus.includes(status)) {
             return res.send(convertResponseObj({}, false, "Invalid status type " + status));
         }
@@ -26,7 +26,7 @@ const sendRequest = async (req, res) => {
         }
 
         // check user is present in database or not
-        const toUser = UserModel.findById(toUserId);
+        const toUser =await UserModel.findById(toUserId);
 
         if(!toUser){
              return res.status(404).send(convertResponseObj({}, false, " User not found"));
@@ -34,7 +34,7 @@ const sendRequest = async (req, res) => {
 
 
         // check existing connection request - user1 to user2 or user2 to user1
-        const existingConnectionRequest = ConnectionRequestModel.findOne({
+        const existingConnectionRequest = await ConnectionRequestModel.findOne({
             $or: [
                 { fromUserId, toUserId }, // duplicate request
                 { fromUserId: toUserId, toUserId: fromUserId } // target user is already have sent conenction request to user
@@ -43,22 +43,53 @@ const sendRequest = async (req, res) => {
         if (existingConnectionRequest) {
             return res.status(400).send(convertResponseObj({}, false, "Connection request already exists !"));
         }
+
         const connectionRequest = new ConnectionRequestModel({
             fromUserId,
             toUserId,
             status
         });
-
         const data = await connectionRequest.save();
 
         res.send(convertResponseObj(data, true, "connection request send successfully "));
 
     }
     catch (err) {
-        throw new AppError(err, 400);
+       next(err);
     }
 }
 
-const reviewRequest = () => { }
+const reviewRequest =async (req,res,next) => { 
+    const {status,requestId} = req.params;
+    const allowedStatus = ["accept", "reject"];
+    const loggedInUser = req.user;
+
+    try{
+    // validate the status
+    if(!allowedStatus.includes(status)){
+        return res.status(400).send(convertResponseObj({},false,"Invalid status"));
+    }
+
+    // check if request is present in database or not
+    const connectionRequest =await ConnectionRequestModel.findOne({
+        _id:requestId,
+        toUserId : loggedInUser._id,
+        status : "interest"
+    });
+    console.log("connectionRequest review = ",connectionRequest);
+    if(!connectionRequest){
+       return res.status(404).send(convertResponseObj({},false,"Connection request did not found"));
+    }
+
+    connectionRequest.status = status;
+
+    const data = await connectionRequest.save();
+
+    res.status(200).send(convertResponseObj(data,false,"Connection request "+status+"ed successfully"));
+    }
+    catch(err){
+        next(err);
+    }
+}
 
 module.exports = { sendRequest, reviewRequest };

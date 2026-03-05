@@ -41,7 +41,7 @@ const loginUser = async (req, res, next) => {
             return res.status(404).send(convertResponseObj({}, false, "Please enter valid credentials"));
         }
         // password comparing (shifted to schema methods)
-        const isUserAuthenticated = userInfoObj.comparePasswords(filteredObj.password);
+        const isUserAuthenticated =await userInfoObj.comparePasswords(filteredObj.password);
 
         if (isUserAuthenticated) {
             // generating token shifted to schema method

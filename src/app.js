@@ -14,6 +14,8 @@ const { convertResponseObj } = require("./utils/UtilFunctions.js");
 const { authRoutes } = require("./routes/auth.routes.js");
 const { profileRoutes } = require("./routes/profile.routes.js");
 const { connectionRequestRoutes } = require("./routes/connectionRequests.routes.js");
+const { userRoutes } = require("./routes/user.routes.js");
+
 
 const startServer = async () => {
     console.log("Loaded ENV:", process.env.ENV_NAME);
@@ -62,6 +64,9 @@ server.use("/profile", profileRoutes);
 // all connection requests routes
 server.use("/request", connectionRequestRoutes);
 
+// all connection requests routes
+server.use("/user", userRoutes);
+
 
 
 
@@ -83,7 +88,7 @@ server.use((err, req, res, next) => {
         convertResponseObj(
             null,
             false,
-            err.message || "Something went wrong"
+            "Error : "+err.message || "Something went wrong"
         )
     );
 });

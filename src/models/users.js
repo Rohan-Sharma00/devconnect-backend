@@ -187,7 +187,7 @@ userSchema.methods.generateJwt = function () {
     return jwt;
 }
 
-userSchema.methods.comparePasswords = function (passwordInputeByUser) {
+userSchema.methods.comparePasswords =async function (passwordInputeByUser) {
     const user = this;
     const hashedPassword = user.password;
     return bcrypt.compareSync(passwordInputeByUser, hashedPassword);
